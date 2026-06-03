@@ -2,24 +2,24 @@ version: '3.8'
 
 services:
   keycloak_db:
-    image: postgres:14
+    image: postgres:18.4
     environment:
       POSTGRES_DB: keycloak_db
       POSTGRES_USER: keycloak_user
       POSTGRES_PASSWORD: keycloak_password
     volumes:
-      - ./postgres-keycloak-data:/var/lib/postgresql/data
+      - ./postgres-keycloak-data:/var/lib/postgresql
     ports:
       - "5433:5432"
   keycloak:
-    image: quay.io/keycloak/keycloak:21.1
+    image: keycloak/keycloak:nightly
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloak_password
+      KC_BOOTSTRAP_ADMIN_USERNAME: keycloak_user
+      KC_BOOTSTRAP_ADMIN_PASSWORD: keycloak_password
     command: 
       - start-dev
       - --import-realm
