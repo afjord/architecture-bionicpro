@@ -18,8 +18,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
-      KC_BOOTSTRAP_ADMIN_USERNAME: keycloak_user
-      KC_BOOTSTRAP_ADMIN_PASSWORD: keycloak_password
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloak_password
     command: 
       - start-dev
       - --import-realm
