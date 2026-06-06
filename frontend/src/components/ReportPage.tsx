@@ -20,12 +20,23 @@ type Report = {
   generatedAt: string;
 };
 
+type ReportResponse = {
+  status: string;
+  source: 'olap' | 's3';
+  reportUrl: string;
+  objectKey: string;
+  periodStart: string;
+  periodEnd: string;
+  report?: Report;
+};
+
 const ReportPage: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [reportResponse, setReportResponse] = useState<ReportResponse | null>(null);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -61,6 +72,7 @@ const ReportPage: React.FC = () => {
       setLoading(true);
       setError(null);
       setReport(null);
+      setReportResponse(null);
 
       const response = await fetch(`${apiUrl}/reports`, {
         credentials: 'include'
@@ -83,11 +95,12 @@ const ReportPage: React.FC = () => {
         throw new Error(body.message || 'Report request failed');
       }
 
-      if (!body.report) {
-        throw new Error('Report response does not contain report data');
+      if (!body.reportUrl) {
+        throw new Error('Report response does not contain CDN URL');
       }
 
-      setReport(body.report);
+      setReportResponse(body);
+      setReport(body.report || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -139,6 +152,23 @@ const ReportPage: React.FC = () => {
         {error && (
           <div className="mt-4 rounded bg-red-100 p-4 text-red-700">
             {error}
+          </div>
+        )}
+
+        {reportResponse && (
+          <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-4 text-blue-900">
+            <div className="font-semibold">Report is ready</div>
+            <div className="mt-1 text-sm">
+              Source: {reportResponse.source === 's3' ? 'S3 cache' : 'OLAP, then saved to S3'}
+            </div>
+            <a
+              href={reportResponse.reportUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-block text-blue-700 underline"
+            >
+              Open report via CDN
+            </a>
           </div>
         )}
 

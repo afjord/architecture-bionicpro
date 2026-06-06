@@ -2,7 +2,7 @@ package com.bionicpro.auth.controller;
 
 import com.bionicpro.auth.config.AuthProperties;
 import com.bionicpro.auth.report.JwtSubjectExtractor;
-import com.bionicpro.auth.report.ReportRepository;
+import com.bionicpro.auth.report.ReportService;
 import com.bionicpro.auth.session.AuthSessionStore;
 import com.bionicpro.auth.session.RotatedSession;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,18 +23,18 @@ public class ReportsController {
 
     private final AuthProperties properties;
     private final AuthSessionStore sessionStore;
-    private final ReportRepository reportRepository;
+    private final ReportService reportService;
     private final JwtSubjectExtractor jwtSubjectExtractor;
 
     public ReportsController(
             AuthProperties properties,
             AuthSessionStore sessionStore,
-            ReportRepository reportRepository,
+            ReportService reportService,
             JwtSubjectExtractor jwtSubjectExtractor
     ) {
         this.properties = properties;
         this.sessionStore = sessionStore;
-        this.reportRepository = reportRepository;
+        this.reportService = reportService;
         this.jwtSubjectExtractor = jwtSubjectExtractor;
     }
 
@@ -58,11 +58,8 @@ public class ReportsController {
                     }
 
                     String keycloakUserId = jwtSubjectExtractor.subject(rotated.accessToken());
-                    return reportRepository.findUserReport(keycloakUserId, resolvedPeriodStart, resolvedPeriodEnd)
-                            .<ResponseEntity<?>>map(report -> ResponseEntity.ok(Map.of(
-                                    "status", "ready",
-                                    "report", report
-                            )))
+                    return reportService.getOrCreateReport(keycloakUserId, resolvedPeriodStart, resolvedPeriodEnd)
+                            .<ResponseEntity<?>>map(ResponseEntity::ok)
                             .orElseGet(() -> ResponseEntity.status(404).body(Map.of(
                                     "status", "not_ready",
                                     "message", "Report for the requested period has not been prepared by Airflow yet",

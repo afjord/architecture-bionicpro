@@ -13,6 +13,13 @@ bionicpro:
     client-id: ${KEYCLOAK_CLIENT_ID:bionicpro-auth}
     client-secret: ${KEYCLOAK_CLIENT_SECRET:bionicpro-auth-secret}
     redirect-uri: ${KEYCLOAK_REDIRECT_URI:http://localhost:8000/auth/callback}
+  report-storage:
+    endpoint: ${REPORT_STORAGE_ENDPOINT:http://localhost:9000}
+    region: ${REPORT_STORAGE_REGION:us-east-1}
+    access-key: ${REPORT_STORAGE_ACCESS_KEY:minioadmin}
+    secret-key: ${REPORT_STORAGE_SECRET_KEY:minioadmin}
+    bucket: ${REPORT_STORAGE_BUCKET:bionicpro-reports}
+    cdn-base-url: ${REPORT_CDN_BASE_URL:http://localhost:8082/reports-cache}
 server:
   port: 8000
   forward-headers-strategy: framework

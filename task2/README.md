@@ -24,7 +24,7 @@ Draw.io-модель в нотации C4 Container: `task2/BionicPRO_reports_ar
 ## Запуск
 
 ```bash
-docker compose up -d reports_olap_db airflow_db airflow keycloak bionicpro-auth frontend
+docker compose up -d reports_olap_db airflow_db airflow airflow_scheduler keycloak bionicpro-auth frontend
 ```
 
 Airflow UI доступен на `http://localhost:8081`. DAG можно запустить вручную или дождаться расписания. После подготовки витрины UI на `http://localhost:3000` вызывает `/reports` и показывает отчёт текущего пользователя.

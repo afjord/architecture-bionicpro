@@ -31,6 +31,36 @@ services:
       - ./database/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5434:5432"
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+  minio_init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done &&
+      mc mb --ignore-existing local/bionicpro-reports &&
+      mc anonymous set download local/bionicpro-reports
+      "
+    depends_on:
+      - minio
+  reports_cdn:
+    image: nginx:alpine
+    volumes:
+      - ./cdn/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./cdn-cache:/var/cache/nginx
+    ports:
+      - "8082:80"
+    depends_on:
+      - minio
   airflow_db:
     image: postgres:18.4
     environment:
@@ -118,9 +148,17 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://reports_olap_db:5432/reports_olap
       SPRING_DATASOURCE_USERNAME: reports_user
       SPRING_DATASOURCE_PASSWORD: reports_password
+      REPORT_STORAGE_ENDPOINT: http://minio:9000
+      REPORT_STORAGE_REGION: us-east-1
+      REPORT_STORAGE_ACCESS_KEY: minioadmin
+      REPORT_STORAGE_SECRET_KEY: minioadmin
+      REPORT_STORAGE_BUCKET: bionicpro-reports
+      REPORT_CDN_BASE_URL: http://localhost:8082/reports-cache
     depends_on:
       - keycloak
       - reports_olap_db
+      - minio_init
+      - reports_cdn
   frontend:
     build:
       context: ./frontend
