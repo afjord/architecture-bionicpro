@@ -20,6 +20,66 @@ services:
       - ./postgres-keycloak-data:/var/lib/postgresql
     ports:
       - "5433:5432"
+  reports_olap_db:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: reports_olap
+      POSTGRES_USER: reports_user
+      POSTGRES_PASSWORD: reports_password
+    volumes:
+      - ./postgres-reports-data:/var/lib/postgresql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5434:5432"
+  airflow_db:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    volumes:
+      - ./postgres-airflow-data:/var/lib/postgresql
+  airflow:
+    image: apache/airflow:2.10.5
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8081
+      AIRFLOW__WEBSERVER__SECRET_KEY: bionicpro-local-airflow-secret-key
+      AIRFLOW_CONN_BIONICPRO_OLAP: postgresql://reports_user:reports_password@reports_olap_db:5432/reports_olap
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+      airflow users reset-password --username admin --password admin &&
+      exec airflow webserver -w 1 -p 8080"
+    user: "${AIRFLOW_UID:-1000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8081:8080"
+    depends_on:
+      - airflow_db
+      - reports_olap_db
+  airflow_scheduler:
+    image: apache/airflow:2.10.5
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8081
+      AIRFLOW__WEBSERVER__SECRET_KEY: bionicpro-local-airflow-secret-key
+      AIRFLOW_CONN_BIONICPRO_OLAP: postgresql://reports_user:reports_password@reports_olap_db:5432/reports_olap
+    command: scheduler
+    user: "${AIRFLOW_UID:-1000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - airflow
   keycloak:
     image: keycloak/keycloak:nightly
     environment:
@@ -55,8 +115,12 @@ services:
       KEYCLOAK_REDIRECT_URI: http://localhost:8000/auth/callback
       SESSION_TTL: 30m
       SESSION_SECURE_COOKIE: "true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://reports_olap_db:5432/reports_olap
+      SPRING_DATASOURCE_USERNAME: reports_user
+      SPRING_DATASOURCE_PASSWORD: reports_password
     depends_on:
       - keycloak
+      - reports_olap_db
   frontend:
     build:
       context: ./frontend

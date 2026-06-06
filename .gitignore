@@ -1,4 +1,8 @@
 /postgres-keycloak-data
+/postgres-airflow-data
+/postgres-reports-data
+/airflow/logs
+/airflow/plugins
 2024__yandex-architecture-sso.code-workspace
 .idea
 /bionicpro-auth/build
