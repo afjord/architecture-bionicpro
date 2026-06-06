@@ -456,7 +456,35 @@
     "notBefore" : 0,
     "groups" : [ ]
   }, {
-    "id" : "77b4ffd3-2c8a-40ab-b477-1d949f06f17a",
+    "id" : "111a0f6e-15f9-4378-a4c7-e68513b1f566",
+    "username" : "afjord",
+    "firstName" : "Андрей",
+    "lastName" : "Фёдоров",
+    "email" : "afjord@yandex.ru",
+    "emailVerified" : false,
+    "enabled" : true,
+    "createdTimestamp" : 1780769592001,
+    "totp" : true,
+    "credentials" : [ {
+      "id" : "5e851a2e-89de-4ba7-b3e6-a1364ce0fe9c",
+      "type" : "otp",
+      "userLabel" : "sdf",
+      "createdDate" : 1780769615715,
+      "secretData" : "{\"value\":\"isgnlRP8wkScmAjtMjw1\"}",
+      "credentialData" : "{\"subType\":\"totp\",\"digits\":6,\"counter\":0,\"period\":30,\"algorithm\":\"HmacSHA1\"}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "federatedIdentities" : [ {
+      "identityProvider" : "yandex",
+      "userId" : "1581111543",
+      "userName" : "afjord"
+    } ],
+    "realmRoles" : [ "default-roles-reports-realm" ],
+    "notBefore" : 0,
+    "groups" : [ ]
+  }, {
+    "id" : "caf4e1cf-a30e-4faf-bb44-75cd9fac0bb9",
     "username" : "alex.johnson",
     "firstName" : "Alex",
     "lastName" : "Johnson",
@@ -464,11 +492,11 @@
     "emailVerified" : true,
     "attributes" : {
       "LDAP_ENTRY_DN" : [ "uid=alex.johnson,ou=People,dc=example,dc=com" ],
-      "LDAP_ID" : [ "d189c8c0-f60c-1040-99cb-8731b6f696bb" ]
+      "LDAP_ID" : [ "2260cd7c-f610-1040-898a-ad2973beedae" ]
     },
     "enabled" : true,
     "origin" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
-    "createdTimestamp" : 1780761784735,
+    "createdTimestamp" : 1780763217271,
     "totp" : false,
     "federationLink" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
     "credentials" : [ ],
@@ -478,7 +506,7 @@
     "notBefore" : 0,
     "groups" : [ ]
   }, {
-    "id" : "b4a21467-35b0-49b3-b2c0-a543014e8ae9",
+    "id" : "936ac57d-482d-46a4-9d04-84fe379aa68a",
     "username" : "jane.smith",
     "firstName" : "Jane",
     "lastName" : "Smith",
@@ -486,11 +514,11 @@
     "emailVerified" : true,
     "attributes" : {
       "LDAP_ENTRY_DN" : [ "uid=jane.smith,ou=People,dc=example,dc=com" ],
-      "LDAP_ID" : [ "d1895db8-f60c-1040-99ca-8731b6f696bb" ]
+      "LDAP_ID" : [ "225ff7ee-f610-1040-8989-ad2973beedae" ]
     },
     "enabled" : true,
     "origin" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
-    "createdTimestamp" : 1780761833351,
+    "createdTimestamp" : 1780769476842,
     "totp" : false,
     "federationLink" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
     "credentials" : [ ],
@@ -500,7 +528,7 @@
     "notBefore" : 0,
     "groups" : [ ]
   }, {
-    "id" : "f62cf237-5613-45c5-ac16-ef37dd4018d0",
+    "id" : "62c2a0b2-1ab7-4f9e-9417-fbd5b7ffd9f3",
     "username" : "john.doe",
     "firstName" : "John",
     "lastName" : "Doe",
@@ -508,11 +536,11 @@
     "emailVerified" : true,
     "attributes" : {
       "LDAP_ENTRY_DN" : [ "uid=john.doe,ou=People,dc=example,dc=com" ],
-      "LDAP_ID" : [ "d188f0d0-f60c-1040-99c9-8731b6f696bb" ]
+      "LDAP_ID" : [ "225efdd0-f610-1040-8988-ad2973beedae" ]
     },
     "enabled" : true,
     "origin" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
-    "createdTimestamp" : 1780761833346,
+    "createdTimestamp" : 1780769476836,
     "totp" : false,
     "federationLink" : "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
     "credentials" : [ ],
@@ -1630,7 +1658,40 @@
   "enabledEventTypes" : [ ],
   "adminEventsEnabled" : false,
   "adminEventsDetailsEnabled" : false,
-  "identityProviders" : [ ],
+  "identityProviders" : [ {
+    "alias" : "yandex",
+    "displayName" : "Яндекс ID",
+    "internalId" : "273dbd93-2f1a-401f-916f-c2e06034ef11",
+    "providerId" : "oauth2",
+    "enabled" : true,
+    "trustEmail" : false,
+    "storeToken" : false,
+    "addReadTokenRoleOnCreate" : false,
+    "linkOnly" : false,
+    "hideOnLogin" : false,
+    "config" : {
+      "userInfoUrl" : "https://login.yandex.ru/info?format=json",
+      "givenNameClaim" : "first_name",
+      "tokenUrl" : "https://oauth.yandex.ru/token",
+      "acceptsPromptNoneForwardFromClient" : "false",
+      "clientId" : "97e85179d50d4b9382b5fa6ba1d98552",
+      "showInAccountConsole" : "ALWAYS",
+      "userIDClaim" : "id",
+      "emailClaim" : "default_email",
+      "userNameClaim" : "login",
+      "caseSensitiveOriginalUsername" : "false",
+      "familyNameClaim" : "last_name",
+      "pkceEnabled" : "false",
+      "clientAuthMethod" : "client_secret_post",
+      "authorizationUrl" : "https://oauth.yandex.ru/authorize",
+      "syncMode" : "IMPORT",
+      "clientSecret" : "3d0569779208444db625c027f8424ab3",
+      "requiresShortStateParameter" : "false",
+      "allowedClockSkew" : "0",
+      "defaultScope" : "login:email login:info"
+    },
+    "types" : [ "USER_AUTHENTICATION", "EXCHANGE_EXTERNAL_TOKEN" ]
+  } ],
   "identityProviderMappers" : [ ],
   "components" : {
     "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy" : [ {
@@ -1656,7 +1717,7 @@
       "subType" : "anonymous",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-role-list-mapper", "saml-user-property-mapper", "oidc-usermodel-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "saml-user-attribute-mapper", "oidc-address-mapper", "oidc-usermodel-property-mapper", "oidc-full-name-mapper" ]
+        "allowed-protocol-mapper-types" : [ "saml-role-list-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-property-mapper", "saml-user-attribute-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "saml-user-property-mapper", "oidc-address-mapper" ]
       }
     }, {
       "id" : "ae06365b-f2ba-4aed-8ff7-9d332ae4b223",
@@ -1696,7 +1757,7 @@
       "subType" : "authenticated",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "oidc-sha256-pairwise-sub-mapper", "saml-user-property-mapper", "oidc-full-name-mapper", "oidc-address-mapper", "saml-user-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-usermodel-attribute-mapper", "saml-role-list-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-usermodel-attribute-mapper", "oidc-address-mapper", "saml-user-attribute-mapper", "saml-user-property-mapper", "saml-role-list-mapper", "oidc-usermodel-property-mapper", "oidc-full-name-mapper", "oidc-sha256-pairwise-sub-mapper" ]
       }
     }, {
       "id" : "e2ad0617-50bf-4656-a332-adf7c318e370",
@@ -1754,11 +1815,11 @@
           "config" : {
             "mode" : [ "READ_ONLY" ],
             "membership.attribute.type" : [ "DN" ],
-            "user.roles.retrieve.strategy" : [ "LOAD_ROLES_BY_MEMBER_ATTRIBUTE" ],
             "roles.dn" : [ "ou=Groups,dc=example,dc=com" ],
+            "user.roles.retrieve.strategy" : [ "LOAD_ROLES_BY_MEMBER_ATTRIBUTE" ],
             "role.recursion" : [ "-1" ],
-            "membership.user.ldap.attribute" : [ "uid" ],
             "membership.ldap.attribute" : [ "member" ],
+            "membership.user.ldap.attribute" : [ "uid" ],
             "role.name.ldap.attribute" : [ "cn" ],
             "use.realm.roles.mapping" : [ "true" ],
             "role.object.classes" : [ "groupOfNames" ],
@@ -1772,8 +1833,8 @@
           "config" : {
             "ldap.attribute" : [ "uid" ],
             "is.mandatory.in.ldap" : [ "true" ],
-            "read.only" : [ "true" ],
             "always.read.value.from.ldap" : [ "true" ],
+            "read.only" : [ "true" ],
             "user.model.attribute" : [ "username" ]
           }
         }, {
@@ -1791,8 +1852,8 @@
         } ]
       },
       "config" : {
-        "fullSyncPeriod" : [ "-1" ],
         "pagination" : [ "true" ],
+        "fullSyncPeriod" : [ "-1" ],
         "connectionPooling" : [ "true" ],
         "usersDn" : [ "ou=People,dc=example,dc=com" ],
         "cachePolicy" : [ "DEFAULT" ],
@@ -1811,8 +1872,8 @@
         "authType" : [ "simple" ],
         "searchScope" : [ "1" ],
         "useTruststoreSpi" : [ "ldapsOnly" ],
-        "priority" : [ "0" ],
         "trustEmail" : [ "true" ],
+        "priority" : [ "0" ],
         "userObjectClasses" : [ "inetOrgPerson, organizationalPerson" ],
         "rdnLDAPAttribute" : [ "uid" ],
         "editMode" : [ "READ_ONLY" ],
