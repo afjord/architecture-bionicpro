@@ -1914,6 +1914,230 @@
   "identityProviders": [],
   "identityProviderMappers": [],
   "components": {
+    "org.keycloak.storage.UserStorageProvider": [
+      {
+        "id": "21b1022b-d0d8-4a8c-b3b5-0e7d20ab2c8f",
+        "name": "bionicpro-international-ldap",
+        "providerId": "ldap",
+        "subComponents": {
+          "org.keycloak.storage.ldap.mappers.LDAPStorageMapper": [
+            {
+              "id": "d647a041-9b89-4aaf-abcc-072abdcea042",
+              "name": "username",
+              "providerId": "user-attribute-ldap-mapper",
+              "subComponents": {},
+              "config": {
+                "always.read.value.from.ldap": [
+                  "true"
+                ],
+                "is.mandatory.in.ldap": [
+                  "true"
+                ],
+                "ldap.attribute": [
+                  "uid"
+                ],
+                "read.only": [
+                  "true"
+                ],
+                "user.model.attribute": [
+                  "username"
+                ]
+              }
+            },
+            {
+              "id": "9cd0161f-2cbb-4af0-8a6e-c8ce495f61bb",
+              "name": "email",
+              "providerId": "user-attribute-ldap-mapper",
+              "subComponents": {},
+              "config": {
+                "always.read.value.from.ldap": [
+                  "true"
+                ],
+                "is.mandatory.in.ldap": [
+                  "false"
+                ],
+                "ldap.attribute": [
+                  "mail"
+                ],
+                "read.only": [
+                  "true"
+                ],
+                "user.model.attribute": [
+                  "email"
+                ]
+              }
+            },
+            {
+              "id": "1a97c38f-bfb6-4311-88d5-d3394cf2f530",
+              "name": "first name",
+              "providerId": "user-attribute-ldap-mapper",
+              "subComponents": {},
+              "config": {
+                "always.read.value.from.ldap": [
+                  "true"
+                ],
+                "is.mandatory.in.ldap": [
+                  "true"
+                ],
+                "ldap.attribute": [
+                  "cn"
+                ],
+                "read.only": [
+                  "true"
+                ],
+                "user.model.attribute": [
+                  "firstName"
+                ]
+              }
+            },
+            {
+              "id": "4ff76757-2d4d-4fdb-a991-7ff8afdc7414",
+              "name": "last name",
+              "providerId": "user-attribute-ldap-mapper",
+              "subComponents": {},
+              "config": {
+                "always.read.value.from.ldap": [
+                  "true"
+                ],
+                "is.mandatory.in.ldap": [
+                  "true"
+                ],
+                "ldap.attribute": [
+                  "sn"
+                ],
+                "read.only": [
+                  "true"
+                ],
+                "user.model.attribute": [
+                  "lastName"
+                ]
+              }
+            },
+            {
+              "id": "e4a51363-2a0f-473d-8f06-df4a692f4445",
+              "name": "realm roles from ldap groups",
+              "providerId": "role-ldap-mapper",
+              "subComponents": {},
+              "config": {
+                "client.id": [
+                  ""
+                ],
+                "membership.attribute.type": [
+                  "DN"
+                ],
+                "membership.ldap.attribute": [
+                  "member"
+                ],
+                "membership.user.ldap.attribute": [
+                  "uid"
+                ],
+                "mode": [
+                  "READ_ONLY"
+                ],
+                "role.name.ldap.attribute": [
+                  "cn"
+                ],
+                "role.object.classes": [
+                  "groupOfNames"
+                ],
+                "role.recursion": [
+                  "-1"
+                ],
+                "roles.dn": [
+                  "ou=Groups,dc=example,dc=com"
+                ],
+                "use.realm.roles.mapping": [
+                  "true"
+                ],
+                "user.roles.retrieve.strategy": [
+                  "LOAD_ROLES_BY_MEMBER_ATTRIBUTE"
+                ]
+              }
+            }
+          ]
+        },
+        "config": {
+          "authType": [
+            "simple"
+          ],
+          "batchSizeForSync": [
+            "1000"
+          ],
+          "bindCredential": [
+            "admin"
+          ],
+          "bindDn": [
+            "cn=admin,dc=example,dc=com"
+          ],
+          "cachePolicy": [
+            "DEFAULT"
+          ],
+          "changedSyncPeriod": [
+            "-1"
+          ],
+          "connectionPooling": [
+            "true"
+          ],
+          "connectionUrl": [
+            "ldap://ldap:389"
+          ],
+          "editMode": [
+            "READ_ONLY"
+          ],
+          "enabled": [
+            "true"
+          ],
+          "fullSyncPeriod": [
+            "-1"
+          ],
+          "importEnabled": [
+            "true"
+          ],
+          "pagination": [
+            "true"
+          ],
+          "priority": [
+            "0"
+          ],
+          "rdnLDAPAttribute": [
+            "uid"
+          ],
+          "searchScope": [
+            "1"
+          ],
+          "syncRegistrations": [
+            "false"
+          ],
+          "trustEmail": [
+            "true"
+          ],
+          "useKerberosForPasswordAuthentication": [
+            "false"
+          ],
+          "useTruststoreSpi": [
+            "ldapsOnly"
+          ],
+          "userObjectClasses": [
+            "inetOrgPerson, organizationalPerson"
+          ],
+          "usernameLDAPAttribute": [
+            "uid"
+          ],
+          "usersDn": [
+            "ou=People,dc=example,dc=com"
+          ],
+          "uuidLDAPAttribute": [
+            "entryUUID"
+          ],
+          "validatePasswordPolicy": [
+            "false"
+          ],
+          "vendor": [
+            "other"
+          ]
+        }
+      }
+    ],
     "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
       {
         "id": "50f09dd9-bef1-4f5c-8a85-e6749b558eb7",

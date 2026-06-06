@@ -1,4 +1,15 @@
 services:
+  ldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: BionicPRO International
+      LDAP_DOMAIN: example.com
+      LDAP_ADMIN_PASSWORD: admin
+    command: --copy-service
+    volumes:
+      - ./ldap/config.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/config.ldif:ro
+    ports:
+      - "389:389"
   keycloak_db:
     image: postgres:18.4
     environment:
@@ -27,6 +38,7 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
+      - ldap
   bionicpro-auth:
     build:
       context: ./bionicpro-auth
