@@ -9,3 +9,4 @@
 .idea
 /bionicpro-auth/build
 /bionicpro-auth/.gradle
+.gradle

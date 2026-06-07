@@ -22,6 +22,14 @@ services:
       - "5433:5432"
   reports_olap_db:
     image: postgres:18.4
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
     environment:
       POSTGRES_DB: reports_olap
       POSTGRES_USER: reports_user
@@ -31,6 +39,78 @@ services:
       - ./database/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5434:5432"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+  kafka-connect:
+    image: quay.io/debezium/connect:2.7
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: bionicpro-debezium-connect
+      CONFIG_STORAGE_TOPIC: bionicpro_connect_configs
+      OFFSET_STORAGE_TOPIC: bionicpro_connect_offsets
+      STATUS_STORAGE_TOPIC: bionicpro_connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka
+      - reports_olap_db
+  debezium_connector_init:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+      - |
+        until curl -fsS http://kafka-connect:8083/connectors >/dev/null; do sleep 2; done
+        curl -fsS -X PUT -H 'Content-Type: application/json' \
+          --data @/debezium/postgres-crm-connector.json \
+          http://kafka-connect:8083/connectors/bionicpro-crm-postgres-connector/config
+    volumes:
+      - ./debezium:/debezium:ro
+    depends_on:
+      - kafka-connect
+  clickhouse_olap_db:
+    image: clickhouse/clickhouse-server:25.5
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: reports_user
+      CLICKHOUSE_PASSWORD: reports_password
+    volumes:
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+    networks:
+      default:
+        aliases:
+          - clickhouse-olap-db
+    depends_on:
+      - kafka
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
@@ -145,9 +225,10 @@ services:
       KEYCLOAK_REDIRECT_URI: http://localhost:8000/auth/callback
       SESSION_TTL: 30m
       SESSION_SECURE_COOKIE: "true"
-      SPRING_DATASOURCE_URL: jdbc:postgresql://reports_olap_db:5432/reports_olap
+      SPRING_DATASOURCE_URL: jdbc:clickhouse://clickhouse-olap-db:8123/default
       SPRING_DATASOURCE_USERNAME: reports_user
       SPRING_DATASOURCE_PASSWORD: reports_password
+      SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: 10000
       REPORT_STORAGE_ENDPOINT: http://minio:9000
       REPORT_STORAGE_REGION: us-east-1
       REPORT_STORAGE_ACCESS_KEY: minioadmin
@@ -156,7 +237,8 @@ services:
       REPORT_CDN_BASE_URL: http://localhost:8082/reports-cache
     depends_on:
       - keycloak
-      - reports_olap_db
+      - clickhouse_olap_db
+      - debezium_connector_init
       - minio_init
       - reports_cdn
   frontend:

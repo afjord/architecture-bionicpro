@@ -27,6 +27,8 @@ spring:
   application:
     name: bionicpro-auth
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/reports_olap}
+    url: ${SPRING_DATASOURCE_URL:jdbc:clickhouse://localhost:8123/default}
     username: ${SPRING_DATASOURCE_USERNAME:reports_user}
     password: ${SPRING_DATASOURCE_PASSWORD:reports_password}
+    hikari:
+      initialization-fail-timeout: 10000

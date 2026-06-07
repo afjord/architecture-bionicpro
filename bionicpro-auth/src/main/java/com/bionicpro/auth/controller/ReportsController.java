@@ -62,7 +62,7 @@ public class ReportsController {
                             .<ResponseEntity<?>>map(ResponseEntity::ok)
                             .orElseGet(() -> ResponseEntity.status(404).body(Map.of(
                                     "status", "not_ready",
-                                    "message", "Report for the requested period has not been prepared by Airflow yet",
+                                    "message", "Report for the requested period has not been prepared by ClickHouse CDC mart yet",
                                     "periodStart", resolvedPeriodStart,
                                     "periodEnd", resolvedPeriodEnd
                             )));

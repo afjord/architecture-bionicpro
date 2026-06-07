@@ -51,6 +51,9 @@ CREATE INDEX IF NOT EXISTS idx_sensor_events_user_time
 CREATE INDEX IF NOT EXISTS idx_user_report_mart_user_period
     ON reporting.user_report_mart (keycloak_user_id, report_period_start, report_period_end);
 
+ALTER TABLE crm.customers REPLICA IDENTITY FULL;
+ALTER TABLE telemetry.sensor_events REPLICA IDENTITY FULL;
+
 INSERT INTO crm.customers (
     keycloak_user_id,
     username,

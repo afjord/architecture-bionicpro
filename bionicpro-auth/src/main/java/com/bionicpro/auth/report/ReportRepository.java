@@ -2,7 +2,12 @@ package com.bionicpro.auth.report;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -40,12 +45,14 @@ public class ReportRepository {
                         FROM reporting.user_report_mart
                         WHERE keycloak_user_id = ?
                           AND report_period_start = ?
-                          AND report_period_end = ?
+                          AND report_period_end <= ?
+                        ORDER BY report_period_end DESC
+                        LIMIT 1
                         """,
                 ps -> {
                     ps.setString(1, keycloakUserId);
-                    ps.setObject(2, periodStart);
-                    ps.setObject(3, periodEnd);
+                    ps.setDate(2, Date.valueOf(periodStart));
+                    ps.setDate(3, Date.valueOf(periodEnd));
                 },
                 (rs, rowNum) -> mapReport(rs)
         ).stream().findFirst();
@@ -54,15 +61,15 @@ public class ReportRepository {
     private ReportView mapReport(ResultSet rs) throws SQLException {
         return new ReportView(
                 rs.getString("keycloak_user_id"),
-                rs.getObject("report_period_start", LocalDate.class),
-                rs.getObject("report_period_end", LocalDate.class),
-                rs.getTimestamp("processed_until").toInstant(),
+                rs.getDate("report_period_start").toLocalDate(),
+                rs.getDate("report_period_end").toLocalDate(),
+                toInstant(rs.getObject("processed_until")),
                 rs.getString("username"),
                 rs.getString("full_name"),
                 rs.getString("email"),
                 rs.getString("prosthesis_model"),
                 rs.getString("prosthesis_serial"),
-                rs.getObject("assigned_at", LocalDate.class),
+                rs.getDate("assigned_at").toLocalDate(),
                 rs.getInt("telemetry_events"),
                 rs.getInt("total_steps"),
                 rs.getInt("total_grip_cycles"),
@@ -70,7 +77,17 @@ public class ReportRepository {
                 rs.getBigDecimal("min_battery_level"),
                 rs.getBigDecimal("max_load_kg"),
                 rs.getInt("error_events"),
-                rs.getTimestamp("generated_at").toInstant()
+                toInstant(rs.getObject("generated_at"))
         );
+    }
+
+    private Instant toInstant(Object value) {
+        return switch (value) {
+            case Instant instant -> instant;
+            case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant();
+            case LocalDateTime localDateTime -> localDateTime.atZone(java.time.ZoneOffset.UTC).toInstant();
+            case Timestamp timestamp -> timestamp.toInstant();
+            default -> throw new IllegalArgumentException("Unsupported timestamp value: " + value);
+        };
     }
 }
