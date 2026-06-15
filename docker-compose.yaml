@@ -1,18 +1,197 @@
-version: '3.8'
-
 services:
+  ldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: BionicPRO International
+      LDAP_DOMAIN: example.com
+      LDAP_ADMIN_PASSWORD: admin
+    command: --copy-service
+    volumes:
+      - ./ldap/config.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/config.ldif:ro
+    ports:
+      - "389:389"
   keycloak_db:
-    image: postgres:14
+    image: postgres:18.4
     environment:
       POSTGRES_DB: keycloak_db
       POSTGRES_USER: keycloak_user
       POSTGRES_PASSWORD: keycloak_password
     volumes:
-      - ./postgres-keycloak-data:/var/lib/postgresql/data
+      - ./postgres-keycloak-data:/var/lib/postgresql
     ports:
       - "5433:5432"
+  reports_olap_db:
+    image: postgres:18.4
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+    environment:
+      POSTGRES_DB: reports_olap
+      POSTGRES_USER: reports_user
+      POSTGRES_PASSWORD: reports_password
+    volumes:
+      - ./postgres-reports-data:/var/lib/postgresql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5434:5432"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+  kafka-connect:
+    image: quay.io/debezium/connect:2.7
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: bionicpro-debezium-connect
+      CONFIG_STORAGE_TOPIC: bionicpro_connect_configs
+      OFFSET_STORAGE_TOPIC: bionicpro_connect_offsets
+      STATUS_STORAGE_TOPIC: bionicpro_connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka
+      - reports_olap_db
+  debezium_connector_init:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+      - |
+        until curl -fsS http://kafka-connect:8083/connectors >/dev/null; do sleep 2; done
+        curl -fsS -X PUT -H 'Content-Type: application/json' \
+          --data @/debezium/postgres-crm-connector.json \
+          http://kafka-connect:8083/connectors/bionicpro-crm-postgres-connector/config
+    volumes:
+      - ./debezium:/debezium:ro
+    depends_on:
+      - kafka-connect
+  clickhouse_olap_db:
+    image: clickhouse/clickhouse-server:25.5
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: reports_user
+      CLICKHOUSE_PASSWORD: reports_password
+    volumes:
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+    networks:
+      default:
+        aliases:
+          - clickhouse-olap-db
+    depends_on:
+      - kafka
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+  minio_init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done &&
+      mc mb --ignore-existing local/bionicpro-reports &&
+      mc anonymous set download local/bionicpro-reports
+      "
+    depends_on:
+      - minio
+  reports_cdn:
+    image: nginx:alpine
+    volumes:
+      - ./cdn/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./cdn-cache:/var/cache/nginx
+    ports:
+      - "8082:80"
+    depends_on:
+      - minio
+  airflow_db:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    volumes:
+      - ./postgres-airflow-data:/var/lib/postgresql
+  airflow:
+    image: apache/airflow:2.10.5
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8081
+      AIRFLOW__WEBSERVER__SECRET_KEY: bionicpro-local-airflow-secret-key
+      AIRFLOW_CONN_BIONICPRO_OLAP: postgresql://reports_user:reports_password@reports_olap_db:5432/reports_olap
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+      airflow users reset-password --username admin --password admin &&
+      exec airflow webserver -w 1 -p 8080"
+    user: "${AIRFLOW_UID:-1000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8081:8080"
+    depends_on:
+      - airflow_db
+      - reports_olap_db
+  airflow_scheduler:
+    image: apache/airflow:2.10.5
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8081
+      AIRFLOW__WEBSERVER__SECRET_KEY: bionicpro-local-airflow-secret-key
+      AIRFLOW_CONN_BIONICPRO_OLAP: postgresql://reports_user:reports_password@reports_olap_db:5432/reports_olap
+    command: scheduler
+    user: "${AIRFLOW_UID:-1000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    depends_on:
+      - airflow
   keycloak:
-    image: quay.io/keycloak/keycloak:21.1
+    image: keycloak/keycloak:nightly
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -29,6 +208,39 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
+      - ldap
+  bionicpro-auth:
+    build:
+      context: ./bionicpro-auth
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      FRONTEND_URL: http://localhost:3000
+      KEYCLOAK_AUTH_SERVER_URL: http://localhost:8080
+      KEYCLOAK_INTERNAL_AUTH_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: reports-realm
+      KEYCLOAK_CLIENT_ID: bionicpro-auth
+      KEYCLOAK_CLIENT_SECRET: bionicpro-auth-secret
+      KEYCLOAK_REDIRECT_URI: http://localhost:8000/auth/callback
+      SESSION_TTL: 30m
+      SESSION_SECURE_COOKIE: "true"
+      SPRING_DATASOURCE_URL: jdbc:clickhouse://clickhouse-olap-db:8123/default
+      SPRING_DATASOURCE_USERNAME: reports_user
+      SPRING_DATASOURCE_PASSWORD: reports_password
+      SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: 10000
+      REPORT_STORAGE_ENDPOINT: http://minio:9000
+      REPORT_STORAGE_REGION: us-east-1
+      REPORT_STORAGE_ACCESS_KEY: minioadmin
+      REPORT_STORAGE_SECRET_KEY: minioadmin
+      REPORT_STORAGE_BUCKET: bionicpro-reports
+      REPORT_CDN_BASE_URL: http://localhost:8082/reports-cache
+    depends_on:
+      - keycloak
+      - clickhouse_olap_db
+      - debezium_connector_init
+      - minio_init
+      - reports_cdn
   frontend:
     build:
       context: ./frontend
@@ -37,6 +249,3 @@ services:
       - "3000:3000"
     environment:
       REACT_APP_API_URL: http://localhost:8000
-      REACT_APP_KEYCLOAK_URL: http://localhost:8080
-      REACT_APP_KEYCLOAK_REALM: reports-realm
-      REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend

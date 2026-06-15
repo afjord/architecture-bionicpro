@@ -1,2 +1,12 @@
 /postgres-keycloak-data
+/postgres-airflow-data
+/postgres-reports-data
+/minio-data
+/cdn-cache
+/airflow/logs
+/airflow/plugins
 2024__yandex-architecture-sso.code-workspace
+.idea
+/bionicpro-auth/build
+/bionicpro-auth/.gradle
+.gradle
